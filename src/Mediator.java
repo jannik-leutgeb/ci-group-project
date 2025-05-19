@@ -18,9 +18,11 @@ public class Mediator {
         for (int i = 0; i < contractSize; i++) {
             int index1 = (int) (Math.random() * contractSize);
             int index2 = (int) (Math.random() * contractSize);
-            int valueIndex1 = contract[index1];
-            contract[index1] = contract[index2];
-            contract[index2] = valueIndex1;
+
+            // swap index1 and index2
+            contract[index1] = contract[index1] ^ contract[index2];
+            contract[index2] = contract[index1] ^ contract[index2];
+            contract[index1] = contract[index1] ^ contract[index2];
         }
 
         return contract;
