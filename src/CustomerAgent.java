@@ -2,13 +2,13 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-public class CustomerAdvanced extends Agent {
+public class CustomerAgent extends Agent {
 
     private int[][] timeMatrix;
     private int[][] delayMatrix;                                                            // calculated based on timeMatrix for efficiency reason
 
 
-    public CustomerAdvanced(File file) throws FileNotFoundException {
+    public CustomerAgent(File file) throws FileNotFoundException {
 
         Scanner scanner = new Scanner(file);
         int jobs = scanner.nextInt();
@@ -37,7 +37,7 @@ public class CustomerAdvanced extends Agent {
         return timeMatrix.length;
     }
 
-    public void printUtility(int[] contract) {
+    public void print(int[] contract) {
         System.out.print(evaluate(contract));
     }
 

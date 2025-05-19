@@ -33,7 +33,7 @@ public class SupplierAgent extends Agent {
         return costMatrix.length;
     }
 
-    public void printUtility(int[] contract) {
+    public void print(int[] contract) {
         System.out.print(evaluate(contract));
     }
 

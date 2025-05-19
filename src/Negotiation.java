@@ -32,7 +32,7 @@ public class Negotiation {
                 for (int j = 0; j < inCu200.length; j++) {
                     System.out.println("Instance: " + i + " " + j);
                     agA = new SupplierAgent(new File(inSu200[i]));
-                    agB = new CustomerAdvanced(new File(inCu200[j]));
+                    agB = new CustomerAgent(new File(inCu200[j]));
                     med = new Mediator(agA.getContractSize(), agB.getContractSize());
                     contract = med.initContract();                                          //contract = solution = job list
                     output(agA, agB, 0, contract);
@@ -55,9 +55,9 @@ public class Negotiation {
 
     public static void output(Agent a1, Agent a2, int i, int[] contract) {
         System.out.print(i + " -> ");
-        a1.printUtility(contract);
+        a1.print(contract);
         System.out.print("  ");
-        a2.printUtility(contract);
+        a2.print(contract);
         System.out.println();
     }
 }
