@@ -18,9 +18,10 @@ public class Mediator {
         for (int i = 0; i < contractSize; i++) {
             int index1 = (int) (Math.random() * contractSize);
             int index2 = (int) (Math.random() * contractSize);
-            int valueIndex1 = contract[index1];
+
+            int temp = contract[index1];
             contract[index1] = contract[index2];
-            contract[index2] = valueIndex1;
+            contract[index2] = temp;
         }
 
         return contract;
@@ -31,11 +32,11 @@ public class Mediator {
         int[] proposal = new int[contract.length];
         for (int i = 0; i < proposal.length; i++) proposal[i] = contract[i];
 
-        int element = (int) ((proposal.length - 1) * Math.random());
-        int wert1 = proposal[element];
-        int wert2 = proposal[element + 1];
-        proposal[element] = wert2;
-        proposal[element + 1] = wert1;
+        int i = (int) ((proposal.length - 1) * Math.random());
+        int val1 = proposal[i];
+        int val2 = proposal[i + 1];
+        proposal[i] = val2;
+        proposal[i + 1] = val1;
 
         check(proposal);
 
