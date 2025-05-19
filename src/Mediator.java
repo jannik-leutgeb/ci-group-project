@@ -18,15 +18,15 @@ public class Mediator {
         for (int i = 0; i < contractSize; i++) {
             int index1 = (int) (Math.random() * contractSize);
             int index2 = (int) (Math.random() * contractSize);
-            int wertindex1 = contract[index1];
+            int valueIndex1 = contract[index1];
             contract[index1] = contract[index2];
-            contract[index2] = wertindex1;
+            contract[index2] = valueIndex1;
         }
 
         return contract;
     }
 
-    //Two mutation operators (Swap, Shift)
+    // two mutation operators (Swap, Shift)
     public int[] constructProposal_SWAP(int[] contract) {
         int[] proposal = new int[contract.length];
         for (int i = 0; i < proposal.length; i++) proposal[i] = contract[i];

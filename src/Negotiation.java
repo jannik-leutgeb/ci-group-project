@@ -7,7 +7,7 @@ import java.io.FileNotFoundException;
 // IT IS ONLY ALLOWED TO PRINT THESE OBJECTIVE-VALUES IN THE CONSOLE FOR ANALYZING REASONS
 
 public class Negotiation {
-    //Parameter of negotiation
+    // Parameter of negotiation
     public static int maxRounds = 10;
 
     public static void main(String[] args) {
@@ -33,13 +33,13 @@ public class Negotiation {
                     System.out.println("Instance: " + i + " " + j);
                     agA = new SupplierAgent(new File(inSu200[i]));
                     agB = new CustomerAgent(new File(inCu200[j]));
-                    med = new Mediator(agA.getContractSize(), agB.getContractSize());
-                    contract = med.initContract();                                          //contract = solution = job list
+                    med = new Mediator(agA.getContractSize(), agB.getContractSize());       // contract size = number of jobs
+                    contract = med.initContract();                                          // contract = solution = job list
                     output(agA, agB, 0, contract);
 
-                    for (int round = 1; round < maxRounds; round++) {                       //Mediator
+                    for (int round = 1; round < maxRounds; round++) {                       // mediator
                         proposal = med.constructProposal(contract);
-                        voteA = agA.vote(contract, proposal);                               //autonomy + private infos
+                        voteA = agA.vote(contract, proposal);                               // autonomy + private infos
                         voteB = agB.vote(contract, proposal);
                         if (voteA && voteB) {
                             contract = proposal;
