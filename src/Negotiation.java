@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 
 public class Negotiation {
     // Parameter of negotiation
-    public static int maxRounds = 10;
+    public static int maxRounds = 10_000_000;
 
     public static void main(String[] args) {
         int[] contract, proposal;
@@ -35,7 +35,7 @@ public class Negotiation {
                     agB = new CustomerAgent(new File(inCu200[j]));
                     med = new Mediator(agA.getContractSize(), agB.getContractSize());       // contract size = number of jobs
                     contract = med.initContract();                                          // contract = solution = job list
-                    output(agA, agB, 0, contract);
+                    output(agA, agB, contract);
 
                     for (int round = 1; round < maxRounds; round++) {                       // mediator
                         proposal = med.constructProposal(contract);
@@ -43,9 +43,9 @@ public class Negotiation {
                         voteB = agB.vote(contract, proposal);
                         if (voteA && voteB) {
                             contract = proposal;
-                            output(agA, agB, round, contract);
                         }
                     }
+                    output(agA, agB, contract);
                 }
             }
         } catch (FileNotFoundException e) {
@@ -53,8 +53,7 @@ public class Negotiation {
         }
     }
 
-    public static void output(Agent a1, Agent a2, int i, int[] contract) {
-        System.out.print(i + " -> ");
+    public static void output(Agent a1, Agent a2, int[] contract) {
         a1.print(contract);
         System.out.print("  ");
         a2.print(contract);
