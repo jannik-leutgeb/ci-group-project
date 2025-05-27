@@ -1,6 +1,6 @@
 import java.io.FileNotFoundException;
 
-public class Mediator {
+public class Mediator implements MediatorInterface {
 
     int contractSize;
 
@@ -75,7 +75,7 @@ public class Mediator {
         return (Math.random() < 0.5) ? constructProposal_SHIFT(contract) : constructProposal_SWAP(contract);
     }
 
-    private void check(int[] proposal) {
+    public void check(int[] proposal) {
         int sum1 = proposal.length * (proposal.length - 1) / 2;
         int sum2 = 0;
         for (int i : proposal) sum2 += i;
