@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 
 public class Negotiation {
     // Parameter of negotiation
-    public static int maxRounds = 1_000_000;
+    public static int maxRounds = 1000000;
 
     public static void main(String[] args) {
         int[] contract, proposal;
@@ -44,9 +44,11 @@ public class Negotiation {
                         voteB = agB.vote(contract, proposal);
                         if (voteA && voteB) {
                             contract = proposal;
-                            output(agA, agB, round, contract);
+//                            output(agA, agB, round, contract);
                         }
                     }
+                    output(agA, agB, maxRounds, contract);
+
                 }
             }
         } catch (FileNotFoundException e) {
