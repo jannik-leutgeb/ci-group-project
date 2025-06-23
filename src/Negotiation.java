@@ -1,5 +1,7 @@
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 // DO NOT USE EVALUATE-FUNCTIONS OF AGENTS WITHIN MEDIATOR OR NEGOTIATION!
@@ -8,13 +10,14 @@ import java.io.FileNotFoundException;
 
 public class Negotiation {
     // Parameter of negotiation
-    public static int maxRounds = 1000000;
+    public static int maxRounds = 1_000_000;
 
     public static void main(String[] args) {
-        int[] contract, proposal;
-        Agent agA, agB;
-        MediatorInterface med;
+        int[] proposal;
+        List<AgentTriplet> approaches = new ArrayList<>();
         boolean voteA, voteB;
+        int minCost;
+        AgentTriplet bestApproach;
 
         try {
             String[] inSu200 = new String[4];
@@ -31,24 +34,53 @@ public class Negotiation {
             for (int i = 0; i < inSu200.length; i++) {
                 for (int j = 0; j < inCu200.length; j++) {
                     System.out.println("Instance: " + i + " " + j);
-                    agA = new SupplierAgent(new File(inSu200[i]));
-                    agB = new CustomerAgent(new File(inCu200[j]));
-//                    med = new Mediator(agA.getContractSize(), agB.getContractSize());       // contract size = number of jobs
-                    med = new MediatorExp2(agA.getContractSize(), agB.getContractSize());       // contract size = number of jobs
-                    contract = med.initContract();                                          // contract = solution = job list
-                    output(agA, agB, 0, contract);
 
-                    for (int round = 1; round < maxRounds; round++) {                       // mediator
-                        proposal = med.constructProposal(contract);
-                        voteA = agA.vote(contract, proposal);                               // autonomy + private infos
-                        voteB = agB.vote(contract, proposal);
-                        if (voteA && voteB) {
-                            contract = proposal;
-//                            output(agA, agB, round, contract);
+                    approaches.add(new AgentTriplet(Strategy.SWAP, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
+                    approaches.add(new AgentTriplet(Strategy.SHIFT, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
+                    approaches.add(new AgentTriplet(Strategy.REVERSE, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
+                    approaches.add(new AgentTriplet(Strategy.SCRAMBLE, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
+                    approaches.add(new AgentTriplet(Strategy.TWO_POINT_SWAP, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
+                    approaches.add(new AgentTriplet(Strategy.CYCLE_SHIFT, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
+
+                    for (AgentTriplet approach : approaches) {
+                        approach.setMediator(approach.getSupplier().getContractSize(), approach.getCustomer().getContractSize());
+                        approach.setContract(approach.getMediator().initContract());
+                    }
+
+                    for (int round = 1; round < maxRounds; round++) {
+
+                        minCost = Integer.MAX_VALUE;
+
+                        for (AgentTriplet approach : approaches) {
+                            proposal = approach.getMediator().constructProposal(approach.getStrategy(), approach.getContract());                            // mediator constructs proposal
+                            voteA = approach.getSupplier().vote(approach.getContract(), proposal);                                  // autonomy + private infos
+                            voteB = approach.getCustomer().vote(approach.getContract(), proposal);
+                            if (voteA && voteB) {
+                                approach.setContract(proposal);
+                            }
+                            approach.setCost(approach.getSupplier().evaluate(approach.getContract()) + approach.getCustomer().evaluate(approach.getContract()));
+
+                            if (approach.getCost() < minCost) {
+                                minCost = approach.getCost();
+                            }
+                        }
+
+                        for (AgentTriplet approach : approaches) {
+                            if (approach.getCost() == minCost) {
+                                approach.setScore(approach.getScore() + 1);
+                            }
                         }
                     }
-                    output(agA, agB, maxRounds, contract);
 
+                    bestApproach = approaches.getFirst();
+
+                    for (AgentTriplet approach : approaches) {
+                        if (approach.getScore() > bestApproach.getScore()) {
+                            bestApproach = approach;
+                        }
+                    }
+
+                    output(bestApproach.getSupplier(), bestApproach.getCustomer(), bestApproach.getContract());
                 }
             }
         } catch (FileNotFoundException e) {
@@ -56,8 +88,7 @@ public class Negotiation {
         }
     }
 
-    public static void output(Agent a1, Agent a2, int i, int[] contract) {
-        System.out.print(i + " -> ");
+    public static void output(Agent a1, Agent a2, int[] contract) {
         a1.print(contract);
         System.out.print("  ");
         a2.print(contract);

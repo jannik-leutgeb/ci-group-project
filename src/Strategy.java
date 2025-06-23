@@ -1,0 +1,3 @@
+public enum Strategy {
+    SWAP, SHIFT, REVERSE, SCRAMBLE, TWO_POINT_SWAP, CYCLE_SHIFT;
+}

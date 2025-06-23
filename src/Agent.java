@@ -6,4 +6,6 @@ public abstract class Agent {
 
     public abstract int getContractSize();
 
+    public abstract int evaluate(int[] contract);
+
 }
