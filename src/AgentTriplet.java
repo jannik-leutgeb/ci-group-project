@@ -3,14 +3,14 @@ import java.io.FileNotFoundException;
 public class AgentTriplet {
 
     private final Strategy strategy;
-    private final Agent supplier;
-    private final Agent customer;
+    private final AgentInterface supplier;
+    private final AgentInterface customer;
     private MediatorInterface mediator;
     private int[] contract;
     private int cost;
     private int score;
 
-    public AgentTriplet(Strategy strategy, Agent supplier, Agent customer) {
+    public AgentTriplet(Strategy strategy, AgentInterface supplier, AgentInterface customer) {
         this.strategy = strategy;
         this.supplier = supplier;
         this.customer = customer;
@@ -24,11 +24,11 @@ public class AgentTriplet {
         return strategy;
     }
 
-    public Agent getSupplier() {
+    public AgentInterface getSupplier() {
         return supplier;
     }
 
-    public Agent getCustomer() {
+    public AgentInterface getCustomer() {
         return customer;
     }
 

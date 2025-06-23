@@ -2,7 +2,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-public class CustomerAgent extends Agent {
+public class CustomerAgent implements AgentInterface {
 
     private int[][] timeMatrix;
     private int[][] delayMatrix;                                                            // calculated based on timeMatrix for efficiency reason

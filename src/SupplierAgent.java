@@ -2,7 +2,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-public class SupplierAgent extends Agent {
+public class SupplierAgent implements AgentInterface {
 
     private int[][] costMatrix;
 

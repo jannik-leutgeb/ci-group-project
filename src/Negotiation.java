@@ -88,7 +88,7 @@ public class Negotiation {
         }
     }
 
-    public static void output(Agent a1, Agent a2, int[] contract) {
+    public static void output(AgentInterface a1, AgentInterface a2, int[] contract) {
         a1.print(contract);
         System.out.print("  ");
         a2.print(contract);
