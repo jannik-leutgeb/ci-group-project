@@ -56,59 +56,64 @@ public class GeneticNegotiation {
         try {
             SupplierAgent supplier = new SupplierAgent(new java.io.File(supplierFile));
             CustomerAgent customer = new CustomerAgent(new java.io.File(customerFile));
-            Mediator mediator = new Mediator(supplier.getContractSize(), customer.getContractSize());
             int contractSize = supplier.getContractSize();
 
-            // Initialize population
-            List<int[]> population = new ArrayList<>();
-            for (int k = 0; k < POPULATION_SIZE; k++) {
-                population.add(mediator.initContract());
-            }
-
+            // Run GA for each strategy and keep the best
             int[] bestContract = null;
             int bestFitness = Integer.MAX_VALUE;
+            Strategy bestStrategy = null;
 
-            for (int gen = 0; gen < GENERATIONS; gen++) {
-                List<int[]> newPopulation = new ArrayList<>();
-                while (newPopulation.size() < POPULATION_SIZE) {
-                    int[] parent1 = tournamentSelect(population, supplier, customer);
-                    int[] parent2 = tournamentSelect(population, supplier, customer);
-                    int[] child1 = Arrays.copyOf(parent1, contractSize);
-                    int[] child2 = Arrays.copyOf(parent2, contractSize);
-
-                    // Crossover
-                    if (Math.random() < CROSSOVER_RATE) {
-                        int[][] children = onePointCrossover(parent1, parent2);
-                        child1 = children[0];
-                        child2 = children[1];
+            for (Strategy strategy : Strategy.values()) {
+                Mediator mediator = new Mediator(contractSize, contractSize);
+                List<int[]> population = new ArrayList<>();
+                for (int k = 0; k < POPULATION_SIZE; k++) {
+                    population.add(mediator.initContract());
+                }
+                int[] localBestContract = null;
+                int localBestFitness = Integer.MAX_VALUE;
+                for (int gen = 0; gen < GENERATIONS; gen++) {
+                    List<int[]> newPopulation = new ArrayList<>();
+                    while (newPopulation.size() < POPULATION_SIZE) {
+                        int[] parent1 = tournamentSelect(population, supplier, customer);
+                        int[] parent2 = tournamentSelect(population, supplier, customer);
+                        int[] child1 = Arrays.copyOf(parent1, contractSize);
+                        int[] child2 = Arrays.copyOf(parent2, contractSize);
+                        // Crossover
+                        if (Math.random() < CROSSOVER_RATE) {
+                            int[][] children = onePointCrossover(parent1, parent2);
+                            child1 = children[0];
+                            child2 = children[1];
+                        }
+                        // Mutation (use only the current strategy)
+                        if (Math.random() < MUTATION_RATE) {
+                            child1 = mediator.constructProposal(strategy, child1);
+                        }
+                        if (Math.random() < MUTATION_RATE) {
+                            child2 = mediator.constructProposal(strategy, child2);
+                        }
+                        newPopulation.add(child1);
+                        if (newPopulation.size() < POPULATION_SIZE) {
+                            newPopulation.add(child2);
+                        }
                     }
-
-                    // Mutation
-                    if (Math.random() < MUTATION_RATE) {
-                        child1 = mediator.constructProposal(randomStrategy(), child1);
-                    }
-                    if (Math.random() < MUTATION_RATE) {
-                        child2 = mediator.constructProposal(randomStrategy(), child2);
-                    }
-
-                    newPopulation.add(child1);
-                    if (newPopulation.size() < POPULATION_SIZE) {
-                        newPopulation.add(child2);
+                    population = newPopulation;
+                    // Find best contract in current population
+                    for (int[] contract : population) {
+                        int fitness = supplier.evaluate(contract) + customer.evaluate(contract);
+                        if (fitness < localBestFitness) {
+                            localBestFitness = fitness;
+                            localBestContract = Arrays.copyOf(contract, contract.length);
+                        }
                     }
                 }
-                population = newPopulation;
-
-                // Find best contract in current population
-                for (int[] contract : population) {
-                    int fitness = supplier.evaluate(contract) + customer.evaluate(contract);
-                    if (fitness < bestFitness) {
-                        bestFitness = fitness;
-                        bestContract = Arrays.copyOf(contract, contract.length);
-                    }
+                // Track global best
+                if (localBestFitness < bestFitness) {
+                    bestFitness = localBestFitness;
+                    bestContract = localBestContract;
+                    bestStrategy = strategy;
                 }
             }
-
-            System.out.println("Best contract found for instance " + i + "," + j + ":");
+            System.out.println("Best contract found for instance " + i + "," + j + " (Strategy: " + bestStrategy + "):");
             supplier.print(bestContract);
             System.out.print("  ");
             customer.print(bestContract);
