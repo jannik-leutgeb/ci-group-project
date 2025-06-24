@@ -40,7 +40,7 @@ public class GeneticNegotiation {
         executor.shutdown();
 
         // Print all results together
-        System.out.println("\n==== Best Results for All Instances ====");
+        System.out.println("\n==== Best Results for All Instances ====\n");
         results.keySet().stream().sorted().forEach(key -> {
             Result r = results.get(key);
             System.out.print("Instance " + key + ": Supplier: ");
@@ -49,19 +49,6 @@ public class GeneticNegotiation {
             r.customer.print(r.contract);
             System.out.println("  Total Fitness: " + r.fitness);
         });
-    }
-
-    private static class Individual {
-        int[] contract;
-        int supplierCost;
-        int customerCost;
-        double crowdingDistance;
-        Individual(int[] contract, int supplierCost, int customerCost) {
-            this.contract = contract;
-            this.supplierCost = supplierCost;
-            this.customerCost = customerCost;
-            this.crowdingDistance = 0.0;
-        }
     }
 
     private static void runInstance(int i, int j, String supplierFile, String customerFile, ConcurrentHashMap<String, Result> results) {
@@ -73,25 +60,25 @@ public class GeneticNegotiation {
             int contractSize = supplier.getContractSize();
 
             // Initialize population
-            List<Individual> population = new ArrayList<>();
+            List<int[]> population = new ArrayList<>();
             for (int k = 0; k < POPULATION_SIZE; k++) {
-                int[] contract = mediator.initContract();
-                population.add(new Individual(contract, supplier.evaluate(contract), customer.evaluate(contract)));
+                population.add(mediator.initContract());
             }
 
-            Individual bestIndividual = null;
+            int[] bestContract = null;
+            int bestFitness = Integer.MAX_VALUE;
 
             for (int gen = 0; gen < GENERATIONS; gen++) {
-                List<Individual> newPopulation = new ArrayList<>();
+                List<int[]> newPopulation = new ArrayList<>();
                 while (newPopulation.size() < POPULATION_SIZE) {
-                    Individual parent1 = paretoTournamentSelect(population);
-                    Individual parent2 = paretoTournamentSelect(population);
-                    int[] child1 = Arrays.copyOf(parent1.contract, contractSize);
-                    int[] child2 = Arrays.copyOf(parent2.contract, contractSize);
+                    int[] parent1 = tournamentSelect(population, supplier, customer);
+                    int[] parent2 = tournamentSelect(population, supplier, customer);
+                    int[] child1 = Arrays.copyOf(parent1, contractSize);
+                    int[] child2 = Arrays.copyOf(parent2, contractSize);
 
                     // Crossover
                     if (Math.random() < CROSSOVER_RATE) {
-                        int[][] children = onePointCrossover(child1, child2);
+                        int[][] children = onePointCrossover(parent1, parent2);
                         child1 = children[0];
                         child2 = children[1];
                     }
@@ -104,96 +91,45 @@ public class GeneticNegotiation {
                         child2 = mediator.constructProposal(randomStrategy(), child2);
                     }
 
-                    newPopulation.add(new Individual(child1, supplier.evaluate(child1), customer.evaluate(child1)));
+                    newPopulation.add(child1);
                     if (newPopulation.size() < POPULATION_SIZE) {
-                        newPopulation.add(new Individual(child2, supplier.evaluate(child2), customer.evaluate(child2)));
+                        newPopulation.add(child2);
                     }
                 }
-                // Combine old and new population for elitism
-                population.addAll(newPopulation);
-                // Pareto sort and diversity preservation
-                List<Individual> paretoFront = getParetoFront(population);
-                assignCrowdingDistance(paretoFront);
-                // Sort by crowding distance descending
-                paretoFront.sort((a, b) -> Double.compare(b.crowdingDistance, a.crowdingDistance));
-                // Next generation: best diverse Pareto individuals
-                population = new ArrayList<>();
-                for (int k = 0; k < Math.min(POPULATION_SIZE, paretoFront.size()); k++) {
-                    population.add(paretoFront.get(k));
-                }
-                // Track best
-                for (Individual ind : population) {
-                    if (bestIndividual == null || dominates(ind, bestIndividual)) {
-                        bestIndividual = ind;
+                population = newPopulation;
+
+                // Find best contract in current population
+                for (int[] contract : population) {
+                    int fitness = supplier.evaluate(contract) + customer.evaluate(contract);
+                    if (fitness < bestFitness) {
+                        bestFitness = fitness;
+                        bestContract = Arrays.copyOf(contract, contract.length);
                     }
                 }
             }
 
             System.out.println("Best contract found for instance " + i + "," + j + ":");
-            supplier.print(bestIndividual.contract);
+            supplier.print(bestContract);
             System.out.print("  ");
-            customer.print(bestIndividual.contract);
+            customer.print(bestContract);
             System.out.println();
             // Store result
-            results.put(i + "," + j, new Result(supplier, customer, bestIndividual.contract, bestIndividual.supplierCost + bestIndividual.customerCost));
+            results.put(i + "," + j, new Result(supplier, customer, bestContract, bestFitness));
         } catch (Exception e) {
             System.out.println("Error for instance " + i + ", " + j + ": " + e.getMessage());
         }
     }
 
-    // Pareto dominance: a dominates b if a is no worse in both and better in at least one
-    private static boolean dominates(Individual a, Individual b) {
-        return (a.supplierCost <= b.supplierCost && a.customerCost <= b.customerCost)
-                && (a.supplierCost < b.supplierCost || a.customerCost < b.customerCost);
-    }
-
-    // Get Pareto front (non-dominated individuals)
-    private static List<Individual> getParetoFront(List<Individual> population) {
-        List<Individual> front = new ArrayList<>();
-        for (Individual ind : population) {
-            boolean dominated = false;
-            for (Individual other : population) {
-                if (dominates(other, ind)) {
-                    dominated = true;
-                    break;
-                }
-            }
-            if (!dominated) front.add(ind);
-        }
-        return front;
-    }
-
-    // Assign crowding distance for diversity
-    private static void assignCrowdingDistance(List<Individual> front) {
-        int n = front.size();
-        if (n == 0) return;
-        for (Individual ind : front) ind.crowdingDistance = 0.0;
-        // Supplier cost
-        front.sort(Comparator.comparingInt(a -> a.supplierCost));
-        front.get(0).crowdingDistance = front.get(n - 1).crowdingDistance = Double.POSITIVE_INFINITY;
-        int minS = front.get(0).supplierCost, maxS = front.get(n - 1).supplierCost;
-        for (int i = 1; i < n - 1; i++) {
-            if (maxS - minS == 0) continue;
-            front.get(i).crowdingDistance += (front.get(i + 1).supplierCost - front.get(i - 1).supplierCost) / (double)(maxS - minS);
-        }
-        // Customer cost
-        front.sort(Comparator.comparingInt(a -> a.customerCost));
-        front.get(0).crowdingDistance = front.get(n - 1).crowdingDistance = Double.POSITIVE_INFINITY;
-        int minC = front.get(0).customerCost, maxC = front.get(n - 1).customerCost;
-        for (int i = 1; i < n - 1; i++) {
-            if (maxC - minC == 0) continue;
-            front.get(i).crowdingDistance += (front.get(i + 1).customerCost - front.get(i - 1).customerCost) / (double)(maxC - minC);
-        }
-    }
-
-    // Pareto-based tournament selection
-    private static Individual paretoTournamentSelect(List<Individual> population) {
+    private static int[] tournamentSelect(List<int[]> population, SupplierAgent supplier, CustomerAgent customer) {
         Random rand = new Random();
-        Individual best = null;
+        int[] best = null;
+        int bestFitness = Integer.MAX_VALUE;
         for (int i = 0; i < TOURNAMENT_SIZE; i++) {
-            Individual candidate = population.get(rand.nextInt(population.size()));
-            if (best == null || dominates(candidate, best) || (dominates(best, candidate) == false && candidate.crowdingDistance > best.crowdingDistance)) {
+            int[] candidate = population.get(rand.nextInt(population.size()));
+            int fitness = supplier.evaluate(candidate) + customer.evaluate(candidate);
+            if (best == null || fitness < bestFitness) {
                 best = candidate;
+                bestFitness = fitness;
             }
         }
         return best;
