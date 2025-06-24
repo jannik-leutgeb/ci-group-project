@@ -6,5 +6,5 @@ public interface MediatorInterface {
 
     int[] constructProposal(Strategy strategy, int[] contract);
 
-    void check(int[] proposal);
+    int[] check(int[] proposal);
 }

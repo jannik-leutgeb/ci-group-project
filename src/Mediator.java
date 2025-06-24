@@ -17,13 +17,12 @@ public class Mediator implements MediatorInterface {
         for (int i = 0; i < contractSize; i++) {
             int jobIndex;
             do {
-                jobIndex = (int)(Math.random() * contractSize);
+                jobIndex = (int) (Math.random() * contractSize);
             } while (used[jobIndex]); // Keep generating until we find unused job
 
             contract[i] = jobIndex;
             used[jobIndex] = true;
         }
-
         return contract;
     }
 
@@ -38,9 +37,7 @@ public class Mediator implements MediatorInterface {
         proposal[i] = val2;
         proposal[i + 1] = val1;
 
-        check(proposal);
-
-        return proposal;
+        return check(proposal);
     }
 
     private int[] constructProposal_SHIFT(int[] contract) {
@@ -67,8 +64,7 @@ public class Mediator implements MediatorInterface {
             }
             proposal[index1] = tmp;
         }
-        check(proposal);
-        return proposal;
+        return check(proposal);
     }
 
     private int[] constructProposal_REVERSE(int[] contract) {
@@ -94,9 +90,7 @@ public class Mediator implements MediatorInterface {
             index1++;
             index2--;
         }
-
-        check(proposal); // Validate the proposal
-        return proposal;
+        return check(proposal);
     }
 
     private int[] constructProposal_SCRAMBLE(int[] contract) {
@@ -122,9 +116,7 @@ public class Mediator implements MediatorInterface {
         for (int i = index1; i <= index2; i++) {
             proposal[i] = subarray.get(i - index1);
         }
-
-        check(proposal);
-        return proposal;
+        return check(proposal);
     }
 
     private int[] constructProposal_TWO_POINT_SWAP(int[] contract) {
@@ -139,8 +131,7 @@ public class Mediator implements MediatorInterface {
         proposal[index1] = proposal[index2];
         proposal[index2] = temp;
 
-        check(proposal);
-        return proposal;
+        return check(proposal);
     }
 
     private int[] constructProposal_CYCLE_SHIFT(int[] contract) {
@@ -159,9 +150,7 @@ public class Mediator implements MediatorInterface {
                 proposal[i] = contract[(i - shift + contractSize) % contractSize];
             }
         }
-
-        check(proposal);
-        return proposal;
+        return check(proposal);
     }
 
     public int[] constructProposal(Strategy strategy, int[] contract) {
@@ -175,10 +164,11 @@ public class Mediator implements MediatorInterface {
         };
     }
 
-    public void check(int[] proposal) {
+    public int[] check(int[] proposal) {
         int sum1 = proposal.length * (proposal.length - 1) / 2;
         int sum2 = 0;
         for (int i : proposal) sum2 += i;
         if (sum1 != sum2) System.err.println("Check the sums");
+        return proposal;
     }
 }
