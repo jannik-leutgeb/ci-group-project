@@ -71,9 +71,15 @@ public class Negotiation {
                         }
                     }
 
-                    bestApproach = approaches.stream().max(Comparator.comparingInt(AgentTriplet::getScore)).orElse(bestApproach);
+                    bestApproach = approaches.getFirst();
+                    for (AgentTriplet approach : approaches) {
+                        if (approach.getScore() > bestApproach.getScore()) {
+                            bestApproach = approach;
+                        }
+                    }
 
                     output(bestApproach.getSupplier(), bestApproach.getCustomer(), bestApproach.getContract());
+                    approaches.clear();
                 }
             }
         } catch (FileNotFoundException e) {
