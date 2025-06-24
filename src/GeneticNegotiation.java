@@ -4,9 +4,9 @@ import java.util.concurrent.*;
 public class GeneticNegotiation {
     // GA parameters
     private static final int POPULATION_SIZE = 50;
-    private static final int GENERATIONS = 100_000; // 10 million generations
-    private static final double CROSSOVER_RATE = 0.8;
-    private static final double MUTATION_RATE = 0.2;
+    private static final int GENERATIONS = 1_000_000; // 10 million generations
+    private static final double CROSSOVER_RATE = 0.5;
+    private static final double MUTATION_RATE = 0.3;
     private static final int TOURNAMENT_SIZE = 3;
 
     public static void main(String[] args) {
@@ -43,14 +43,12 @@ public class GeneticNegotiation {
             e.printStackTrace();
         }
         executor.shutdown();
-
         long endTime = System.currentTimeMillis();
         long duration = endTime - startTime;
         long hours = duration / (1000 * 60 * 60);
         long minutes = (duration / (1000 * 60)) % 60;
         long seconds = (duration / 1000) % 60;
 
-        // Print all results together
         System.out.println("\n==== Best Results for All Instances ====\n");
         results.keySet().stream().sorted().forEach(key -> {
             Result r = results.get(key);
@@ -68,67 +66,62 @@ public class GeneticNegotiation {
         try {
             SupplierAgent supplier = new SupplierAgent(new java.io.File(supplierFile));
             CustomerAgent customer = new CustomerAgent(new java.io.File(customerFile));
+            Mediator mediator = new Mediator(supplier.getContractSize(), customer.getContractSize());
             int contractSize = supplier.getContractSize();
 
-            // Run GA for each strategy and keep the best
+            // Initialize population
+            List<int[]> population = new ArrayList<>();
+            for (int k = 0; k < POPULATION_SIZE; k++) {
+                population.add(mediator.initContract());
+            }
+
             int[] bestContract = null;
             int bestFitness = Integer.MAX_VALUE;
-            Strategy bestStrategy = null;
 
-            for (Strategy strategy : Strategy.values()) {
-                Mediator mediator = new Mediator(contractSize, contractSize);
-                List<int[]> population = new ArrayList<>();
-                for (int k = 0; k < POPULATION_SIZE; k++) {
-                    population.add(mediator.initContract());
-                }
-                int[] localBestContract = null;
-                int localBestFitness = Integer.MAX_VALUE;
-                for (int gen = 0; gen < GENERATIONS; gen++) {
-                    List<int[]> newPopulation = new ArrayList<>();
-                    while (newPopulation.size() < POPULATION_SIZE) {
-                        int[] parent1 = tournamentSelect(population, supplier, customer);
-                        int[] parent2 = tournamentSelect(population, supplier, customer);
-                        int[] child1 = Arrays.copyOf(parent1, contractSize);
-                        int[] child2 = Arrays.copyOf(parent2, contractSize);
-                        // Crossover
-                        if (Math.random() < CROSSOVER_RATE) {
-                            int[][] children = orderCrossover(parent1, parent2);
-                            child1 = children[0];
-                            child2 = children[1];
-                        }
-                        // Mutation (use only the current strategy)
-                        if (Math.random() < MUTATION_RATE) {
-                            child1 = mediator.constructProposal(strategy, child1);
-                        }
-                        if (Math.random() < MUTATION_RATE) {
-                            child2 = mediator.constructProposal(strategy, child2);
-                        }
-                        newPopulation.add(child1);
-                        if (newPopulation.size() < POPULATION_SIZE) {
-                            newPopulation.add(child2);
-                        }
+            for (int gen = 0; gen < GENERATIONS; gen++) {
+                List<int[]> newPopulation = new ArrayList<>();
+                while (newPopulation.size() < POPULATION_SIZE) {
+                    int[] parent1 = tournamentSelect(population, supplier, customer);
+                    int[] parent2 = tournamentSelect(population, supplier, customer);
+                    int[] child1 = Arrays.copyOf(parent1, contractSize);
+                    int[] child2 = Arrays.copyOf(parent2, contractSize);
+
+                    // Crossover
+                    if (Math.random() < CROSSOVER_RATE) {
+                        int[][] children = onePointCrossover(parent1, parent2);
+                        child1 = children[0];
+                        child2 = children[1];
                     }
-                    population = newPopulation;
-                    // Find best contract in current population
-                    for (int[] contract : population) {
-                        int fitness = supplier.evaluate(contract) + customer.evaluate(contract);
-                        if (fitness < localBestFitness) {
-                            localBestFitness = fitness;
-                            localBestContract = Arrays.copyOf(contract, contract.length);
-                        }
+
+                    // Mutation
+                    if (Math.random() < MUTATION_RATE) {
+                        child1 = mediator.constructProposal(randomStrategy(), child1);
                     }
-                    if (gen % 10000 == 0) {
-                        System.out.println("Generation " + gen + ": Best fitness = " + localBestFitness);
+                    if (Math.random() < MUTATION_RATE) {
+                        child2 = mediator.constructProposal(randomStrategy(), child2);
+                    }
+
+                    newPopulation.add(child1);
+                    if (newPopulation.size() < POPULATION_SIZE) {
+                        newPopulation.add(child2);
                     }
                 }
-                // Track global best
-                if (localBestFitness < bestFitness) {
-                    bestFitness = localBestFitness;
-                    bestContract = localBestContract;
-                    bestStrategy = strategy;
+                population = newPopulation;
+
+                // Find best contract in current population
+                for (int[] contract : population) {
+                    int fitness = supplier.evaluate(contract) + customer.evaluate(contract);
+                    if (fitness < bestFitness) {
+                        bestFitness = fitness;
+                        bestContract = Arrays.copyOf(contract, contract.length);
+                    }
+                }
+                if (gen % 50000 == 0) {
+                    System.out.println("Generation " + gen + ": Best fitness = " + bestFitness);
                 }
             }
-            System.out.println("Best contract found for instance " + i + "," + j + " (Strategy: " + bestStrategy + "):");
+
+            System.out.println("Best contract found for instance " + i + "," + j + ":");
             supplier.print(bestContract);
             System.out.print("  ");
             customer.print(bestContract);
@@ -155,73 +148,29 @@ public class GeneticNegotiation {
         return best;
     }
 
-    // Order-1 crossover for permutations
+    // One-point Crossover
     private static int[][] onePointCrossover(int[] p1, int[] p2) {
         int size = p1.length;
         Random rand = new Random();
-        int point = rand.nextInt(size - 1) + 1;
+        int crossoverPoint = rand.nextInt(size);
         int[] child1 = new int[size];
         int[] child2 = new int[size];
-        Arrays.fill(child1, -1);
-        Arrays.fill(child2, -1);
-        System.arraycopy(p1, 0, child1, 0, point);
-        System.arraycopy(p2, 0, child2, 0, point);
-        fillRemaining(child1, p2, point);
-        fillRemaining(child2, p1, point);
+        System.arraycopy(p1, 0, child1, 0, crossoverPoint);
+        System.arraycopy(p2, 0, child2, 0, crossoverPoint);
+        Arrays.fill(child1, crossoverPoint, size, -1);
+        Arrays.fill(child2, crossoverPoint, size, -1);
+        fillGaps(child1, p2, crossoverPoint);
+        fillGaps(child2, p1, crossoverPoint);
         return new int[][]{child1, child2};
     }
 
-    private static void fillRemaining(int[] child, int[] parent, int start) {
+    private static void fillGaps(int[] child, int[] parent, int start) {
         int size = child.length;
         int idx = start;
         for (int i = 0; i < size; i++) {
             int gene = parent[i];
             boolean exists = false;
             for (int j = 0; j < start; j++) {
-                if (child[j] == gene) {
-                    exists = true;
-                    break;
-                }
-            }
-            if (!exists) {
-                child[idx++] = gene;
-                if (idx == size) break;
-            }
-        }
-    }
-
-    // Order Crossover (OX) for permutations
-    private static int[][] orderCrossover(int[] p1, int[] p2) {
-        int size = p1.length;
-        Random rand = new Random();
-        int start = rand.nextInt(size);
-        int end = rand.nextInt(size);
-        if (start > end) {
-            int temp = start;
-            start = end;
-            end = temp;
-        }
-        int[] child1 = new int[size];
-        int[] child2 = new int[size];
-        Arrays.fill(child1, -1);
-        Arrays.fill(child2, -1);
-        // Copy the slice from parents
-        for (int i = start; i <= end; i++) {
-            child1[i] = p1[i];
-            child2[i] = p2[i];
-        }
-        // Fill the rest from the other parent
-        fillOX(child1, p2, end, size);
-        fillOX(child2, p1, end, size);
-        return new int[][]{child1, child2};
-    }
-
-    private static void fillOX(int[] child, int[] parent, int end, int size) {
-        int idx = (end + 1) % size;
-        for (int i = 0; i < size; i++) {
-            int gene = parent[(end + 1 + i) % size];
-            boolean exists = false;
-            for (int j = 0; j < size; j++) {
                 if (child[j] == gene) {
                     exists = true;
                     break;
