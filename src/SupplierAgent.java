@@ -33,11 +33,6 @@ public class SupplierAgent implements AgentInterface {
         return costMatrix.length;
     }
 
-    public void print(int[] contract) {
-        System.out.print(evaluate(contract));
-    }
-
-
     public int evaluate(int[] contract) {
         int result = 0;
         for (int i = 0; i < contract.length - 1; i++) {

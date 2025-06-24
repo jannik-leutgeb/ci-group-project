@@ -1,7 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 
@@ -16,9 +15,10 @@ public class Negotiation {
     public static void main(String[] args) {
         int[] proposal;
         List<AgentTriplet> approaches = new ArrayList<>();
-        AgentTriplet bestApproach = null;
+        AgentTriplet bestApproach;
         boolean voteA, voteB;
         int minCost;
+        int totalCost = 0;
 
         try {
             String[] inSu200 = {
@@ -37,7 +37,7 @@ public class Negotiation {
 
             for (int i = 0; i < inSu200.length; i++) {
                 for (int j = 0; j < inCu200.length; j++) {
-                    System.out.println("Instance: " + i + " " + j);
+                    System.out.println("Instance:\t" + i + " " + j);
 
                     approaches.add(new AgentTriplet(Strategy.SWAP, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
                     approaches.add(new AgentTriplet(Strategy.SHIFT, new SupplierAgent(new File(inSu200[i])), new CustomerAgent(new File(inCu200[j]))));
@@ -78,19 +78,19 @@ public class Negotiation {
                         }
                     }
 
-                    output(bestApproach.getSupplier(), bestApproach.getCustomer(), bestApproach.getContract());
+                    output(bestApproach.getStrategy(), bestApproach.getSupplier(), bestApproach.getCustomer(), bestApproach.getContract());
+                    totalCost += bestApproach.getSupplier().evaluate(bestApproach.getContract()) + bestApproach.getCustomer().evaluate(bestApproach.getContract());
                     approaches.clear();
                 }
             }
+            System.out.println("\nImprovement:\t" + (((318164 - totalCost) - 170715) / 170715) * 100);
         } catch (FileNotFoundException e) {
             System.out.println(e.getMessage());
         }
     }
 
-    public static void output(AgentInterface a1, AgentInterface a2, int[] contract) {
-        a1.print(contract);
-        System.out.print("  ");
-        a2.print(contract);
-        System.out.println();
+    public static void output(Strategy s, AgentInterface a1, AgentInterface a2, int[] contract) {
+        System.out.println("Strategy:\t" + s);
+        System.out.println("Cost:\t\t" + a1.evaluate(contract) + " " + a2.evaluate(contract) + "\n");
     }
 }

@@ -37,10 +37,6 @@ public class CustomerAgent implements AgentInterface {
         return timeMatrix.length;
     }
 
-    public void print(int[] contract) {
-        System.out.print(evaluate(contract));
-    }
-
     private void calculateDelay(int jobNr) {
         delayMatrix = new int[jobNr][jobNr];
         for (int h = 0; h < jobNr; h++) {
