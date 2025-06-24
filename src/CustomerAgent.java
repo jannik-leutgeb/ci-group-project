@@ -69,7 +69,7 @@ public class CustomerAgent extends Agent {
         }
     }
 
-    private int evaluate(int[] contract) {
+    public int evaluate(int[] contract) {
         int result = 0;
         for (int i = 1; i < contract.length; i++) {
             int jobVor = contract[i - 1];

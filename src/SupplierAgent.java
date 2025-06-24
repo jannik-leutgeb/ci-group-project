@@ -38,14 +38,13 @@ public class SupplierAgent extends Agent {
     }
 
 
-    private int evaluate(int[] contract) {
+    public int evaluate(int[] contract) {
         int result = 0;
         for (int i = 0; i < contract.length - 1; i++) {
             int zeile = contract[i];
             int spalte = contract[i + 1];
             result += costMatrix[zeile][spalte];
         }
-
         return result;
     }
 

@@ -75,6 +75,33 @@ public class Mediator {
         return (Math.random() < 0.5) ? constructProposal_SHIFT(contract) : constructProposal_SWAP(contract);
     }
 
+    // Order Crossover (OX) for permutations
+    public int[] crossover(int[] parent1, int[] parent2) {
+        int size = parent1.length;
+        int[] child = new int[size];
+        boolean[] inChild = new boolean[size];
+
+        int start = (int) (Math.random() * size);
+        int end = start + (int) (Math.random() * (size - start));
+        if (end > size) end = size;
+
+        // Copy a slice from parent1
+        for (int i = start; i < end; i++) {
+            child[i] = parent1[i];
+            inChild[parent1[i]] = true;
+        }
+
+        // Fill the rest from parent2
+        int current = 0;
+        for (int i = 0; i < size; i++) {
+            if (!inChild[parent2[i]]) {
+                while (current >= start && current < end) current++;
+                child[current++] = parent2[i];
+            }
+        }
+        return child;
+    }
+
     private void check(int[] proposal) {
         int sum1 = proposal.length * (proposal.length - 1) / 2;
         int sum2 = 0;

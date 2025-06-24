@@ -37,15 +37,52 @@ public class Negotiation {
                     contract = med.initContract();                                          // contract = solution = job list
                     output(agA, agB, contract);
 
-                    for (int round = 1; round < maxRounds; round++) {                       // mediator
-                        proposal = med.constructProposal(contract);
-                        voteA = agA.vote(contract, proposal);                               // autonomy + private infos
-                        voteB = agB.vote(contract, proposal);
-                        if (voteA && voteB) {
-                            contract = proposal;
+                    int populationSize = 20;
+                    int[][] population = new int[populationSize][];
+                    for (int p = 0; p < populationSize; p++) {
+                        population[p] = med.initContract();
+                    }
+
+                    for (int round = 1; round < maxRounds; round++) {
+                        // Tournament selection
+                        int idx1 = (int)(Math.random() * populationSize);
+                        int idx2 = (int)(Math.random() * populationSize);
+                        int[] parent1 = population[idx1];
+                        int[] parent2 = population[idx2];
+
+                        // Crossover
+                        int[] child = med.crossover(parent1, parent2);
+
+                        // Mutation
+                        child = med.constructProposal(child);
+
+                        // Voting
+                        if (agA.vote(parent1, child) && agB.vote(parent1, child)) {
+                            // Replace the worst individual (highest sum of objectives)
+                            int worstIdx = 0;
+                            int worstScore = Integer.MIN_VALUE;
+                            for (int m = 0; m < populationSize; m++) { // <-- changed from i to m
+                                int score = ((SupplierAgent)agA).evaluate(population[m]) + ((CustomerAgent)agB).evaluate(population[m]);
+                                if (score > worstScore) {
+                                    worstScore = score;
+                                    worstIdx = m;
+                                }
+                            }
+                            population[worstIdx] = child;
                         }
                     }
-                    output(agA, agB, contract);
+
+                    // Output the best contract in the population
+                    int bestIdx = 0;
+                    int bestScore = Integer.MAX_VALUE;
+                    for (int k = 0; k < populationSize; k++) { // <-- changed from i to k
+                        int score = ((SupplierAgent)agA).evaluate(population[k]) + ((CustomerAgent)agB).evaluate(population[k]);
+                        if (score < bestScore) {
+                            bestScore = score;
+                            bestIdx = k;
+                        }
+                    }
+                    output(agA, agB, population[bestIdx]);
                 }
             }
         } catch (FileNotFoundException e) {
