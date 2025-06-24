@@ -20,16 +20,19 @@ public class Negotiation {
         AgentTriplet bestApproach;
 
         try {
-            String[] inSu200 = new String[4];
-            String[] inCu200 = new String[4];
-            inSu200[0] = "data/daten3ASupplier_200.txt";
-            inSu200[1] = "data/daten3BSupplier_200.txt";
-            inSu200[2] = "data/daten4ASupplier_200.txt";
-            inSu200[3] = "data/daten4BSupplier_200.txt";
-            inCu200[0] = "data/daten3ACustomer_200_10.txt";
-            inCu200[1] = "data/daten3BCustomer_200_20.txt";
-            inCu200[2] = "data/daten4ACustomer_200_5.txt";
-            inCu200[3] = "data/daten4BCustomer_200_5.txt";
+            String[] inSu200 = {
+                    "data/daten3ASupplier_200.txt",
+                    "data/daten3BSupplier_200.txt",
+                    "data/daten4ASupplier_200.txt",
+                    "data/daten4BSupplier_200.txt"
+            };
+
+            String[] inCu200 = {
+                    "data/daten3ACustomer_200_10.txt",
+                    "data/daten3BCustomer_200_20.txt",
+                    "data/daten4ACustomer_200_5.txt",
+                    "data/daten4BCustomer_200_5.txt"
+            };
 
             for (int i = 0; i < inSu200.length; i++) {
                 for (int j = 0; j < inCu200.length; j++) {
