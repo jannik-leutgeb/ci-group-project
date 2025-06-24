@@ -18,8 +18,6 @@ public class AgentTriplet {
         this.score = 0;
     }
 
-    // getters
-
     public Strategy getStrategy() {
         return strategy;
     }

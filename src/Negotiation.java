@@ -1,6 +1,7 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 
@@ -15,9 +16,9 @@ public class Negotiation {
     public static void main(String[] args) {
         int[] proposal;
         List<AgentTriplet> approaches = new ArrayList<>();
+        AgentTriplet bestApproach = null;
         boolean voteA, voteB;
         int minCost;
-        AgentTriplet bestApproach;
 
         try {
             String[] inSu200 = {
@@ -58,30 +59,19 @@ public class Negotiation {
                             proposal = approach.getMediator().constructProposal(approach.getStrategy(), approach.getContract());                            // mediator constructs proposal
                             voteA = approach.getSupplier().vote(approach.getContract(), proposal);                                  // autonomy + private infos
                             voteB = approach.getCustomer().vote(approach.getContract(), proposal);
-                            if (voteA && voteB) {
-                                approach.setContract(proposal);
-                            }
+
+                            if (voteA && voteB) approach.setContract(proposal);
                             approach.setCost(approach.getSupplier().evaluate(approach.getContract()) + approach.getCustomer().evaluate(approach.getContract()));
 
-                            if (approach.getCost() < minCost) {
-                                minCost = approach.getCost();
-                            }
+                            if (approach.getCost() < minCost) minCost = approach.getCost();
                         }
 
                         for (AgentTriplet approach : approaches) {
-                            if (approach.getCost() == minCost) {
-                                approach.setScore(approach.getScore() + 1);
-                            }
+                            if (approach.getCost() == minCost) approach.setScore(approach.getScore() + 1);
                         }
                     }
 
-                    bestApproach = approaches.getFirst();
-
-                    for (AgentTriplet approach : approaches) {
-                        if (approach.getScore() > bestApproach.getScore()) {
-                            bestApproach = approach;
-                        }
-                    }
+                    bestApproach = approaches.stream().max(Comparator.comparingInt(AgentTriplet::getScore)).orElse(bestApproach);
 
                     output(bestApproach.getSupplier(), bestApproach.getCustomer(), bestApproach.getContract());
                 }
