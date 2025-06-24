@@ -1,7 +1,7 @@
 import java.io.FileNotFoundException;
 
 public class Mediator implements MediatorInterface {
-    private int contractSize;
+    private final int contractSize;
 
     public Mediator(int contractSizeA, int contractSizeB) throws FileNotFoundException {
         if (contractSizeA != contractSizeB) {
