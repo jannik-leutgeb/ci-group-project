@@ -75,6 +75,11 @@ public class Mediator implements MediatorInterface {
         return (Math.random() < 0.5) ? constructProposal_SHIFT(contract) : constructProposal_SWAP(contract);
     }
 
+    @Override
+    public int[] constructProposal(int[] contract, double[] operatorWeights, int[] operatorIndex) {
+        return new int[0];
+    }
+
     public void check(int[] proposal) {
         int sum1 = proposal.length * (proposal.length - 1) / 2;
         int sum2 = 0;

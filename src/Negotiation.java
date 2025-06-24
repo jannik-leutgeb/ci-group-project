@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 
 public class Negotiation {
     // Parameter of negotiation
-    public static int maxRounds = 1000000;
+    public static int maxRounds = 10_000_000;
 
     public static void main(String[] args) {
         int[] contract, proposal;
@@ -38,21 +38,113 @@ public class Negotiation {
                     contract = med.initContract();                                          // contract = solution = job list
                     output(agA, agB, 0, contract);
 
-                    for (int round = 1; round < maxRounds; round++) {                       // mediator
+                    double[] operatorWeights = {0.2, 0.2, 0.2, 0.2, 0.2}; // Initialize weights equally
+
+                    for (int round = 1; round < maxRounds; round++) {
+                        int[] operatorIndex = new int[1]; // Array to store operator index
                         proposal = med.constructProposal(contract);
-                        voteA = agA.vote(contract, proposal);                               // autonomy + private infos
+//                        proposal = med.constructProposal(contract, operatorWeights, operatorIndex);
+                        voteA = agA.vote(contract, proposal);
                         voteB = agB.vote(contract, proposal);
+
                         if (voteA && voteB) {
                             contract = proposal;
-//                            output(agA, agB, round, contract);
+                            updateOperatorWeights(operatorWeights, operatorIndex[0], true); // Update weights for success
+                        } else {
+                            updateOperatorWeights(operatorWeights, operatorIndex[0], false); // Update weights for failure
                         }
                     }
+                    System.out.println(operatorWeights[0] + " " + operatorWeights[1] + " " + operatorWeights[2] + " " + operatorWeights[3] + " " + operatorWeights[4]);
                     output(agA, agB, maxRounds, contract);
 
                 }
             }
         } catch (FileNotFoundException e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    // Example of updating weights based on success
+//    private static void updateOperatorWeights(double[] operatorWeights, int operatorIndex, boolean success) {
+//        double adjustment = success ? 0.01 : -0.01; // Increase or decrease weight
+//        operatorWeights[operatorIndex] = Math.max(0, operatorWeights[operatorIndex] + adjustment); // Ensure weights are non-negative
+//
+//        // Normalize weights to ensure they sum to 1
+//        double sum = 0;
+//        for (double weight : operatorWeights) {
+//            sum += weight;
+//        }
+//        for (int i = 0; i < operatorWeights.length; i++) {
+//            operatorWeights[i] /= sum;
+//        }
+//
+//        // Prevent any operator's weight from exceeding the maximum threshold
+//        double maxThreshold = 0.8;
+//        for (int i = 0; i < operatorWeights.length; i++) {
+//            if (operatorWeights[i] > maxThreshold) {
+//                double excess = operatorWeights[i] - maxThreshold;
+//                operatorWeights[i] = maxThreshold;
+//
+//                // Redistribute excess weight among other operators
+//                double redistribution = excess / (operatorWeights.length - 1);
+//                for (int j = 0; j < operatorWeights.length; j++) {
+//                    if (j != i) {
+//                        operatorWeights[j] += redistribution;
+//                    }
+//                }
+//            }
+//        }
+//
+//        // Re-normalize weights after redistribution
+//        sum = 0;
+//        for (double weight : operatorWeights) {
+//            sum += weight;
+//        }
+//        for (int i = 0; i < operatorWeights.length; i++) {
+//            operatorWeights[i] /= sum;
+//        }
+//    }
+
+    private static void updateOperatorWeights(double[] operatorWeights, int operatorIndex, boolean success) {
+        double adjustmentBase = (success ? 1.0 : -1.0) / maxRounds; // Base adjustment scaled by maxRounds
+        double scalingFactor = 1 - operatorWeights[operatorIndex]; // Scale adjustment inversely to weight
+        double adjustment = adjustmentBase * scalingFactor; // Scaled adjustment
+
+        operatorWeights[operatorIndex] = Math.max(0, operatorWeights[operatorIndex] + adjustment); // Ensure weights are non-negative
+
+        // Normalize weights to ensure they sum to 1
+        double sum = 0;
+        for (double weight : operatorWeights) {
+            sum += weight;
+        }
+        for (int i = 0; i < operatorWeights.length; i++) {
+            operatorWeights[i] /= sum;
+        }
+
+        // Prevent any operator's weight from exceeding the maximum threshold
+        double maxThreshold = 0.8;
+        for (int i = 0; i < operatorWeights.length; i++) {
+            if (operatorWeights[i] > maxThreshold) {
+                double excess = operatorWeights[i] - maxThreshold;
+                operatorWeights[i] = maxThreshold;
+
+                // Redistribute excess weight among other operators
+                double redistribution = excess / (operatorWeights.length - 1);
+                for (int j = 0; j < operatorWeights.length; j++) {
+                    if (j != i) {
+                        operatorWeights[j] += redistribution;
+                    }
+                }
+            }
+        }
+
+        // Re-normalize weights after redistribution
+        sum = 0;
+        for (double weight : operatorWeights) {
+            sum += weight;
+        }
+        for (int i = 0; i < operatorWeights.length; i++) {
+            operatorWeights[i] /= sum;
         }
     }
 

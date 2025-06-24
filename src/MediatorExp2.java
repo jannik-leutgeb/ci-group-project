@@ -164,18 +164,38 @@ public class MediatorExp2 implements MediatorInterface {
         return proposal;
     }
 
+    public int[] constructProposal(int[] contract, double[] operatorWeights, int[] operatorIndex) {
+        double random = Math.random();
+        if (random < operatorWeights[0]) {
+            operatorIndex[0] = 0; // SHIFT operator
+            return constructProposal_SHIFT(contract);
+        } else if (random < operatorWeights[0] + operatorWeights[1]) {
+            operatorIndex[0] = 1; // SWAP operator
+            return constructProposal_SWAP(contract);
+        } else if (random < operatorWeights[0] + operatorWeights[1] + operatorWeights[2]) {
+            operatorIndex[0] = 2; // REVERSE operator
+            return constructProposal_REVERSE(contract);
+        } else if (random < operatorWeights[0] + operatorWeights[1] + operatorWeights[2] + operatorWeights[3]) {
+            operatorIndex[0] = 3; // SCRAMBLE operator
+            return constructProposal_SCRAMBLE(contract);
+        } else {
+            operatorIndex[0] = 4; // TWO_POINT_SWAP operator
+            return constructProposal_TWO_POINT_SWAP(contract);
+        }
+    }
+
     public int[] constructProposal(int[] contract) {
         double random = Math.random();
-        if (random < 0.33) {
+        if (random < 0.18) {
             return constructProposal_SHIFT(contract);
-        } else if (random < 0.66) {
+        } else if (random < 0.36) {
             return constructProposal_SWAP(contract);
         }
-        else if (random < 0.83) {
+        else if (random < 0.54) {
             return constructProposal_SCRAMBLE(contract);
-        } else if (random < 0.90) {
+        } else if (random < 0.72) {
             return constructProposal_TWO_POINT_SWAP(contract);
-        } else if (random < 0.95) {
+        } else if (random < 0.9) {
             return constructProposal_CYCLE_SHIFT(contract);
         }
         else {
