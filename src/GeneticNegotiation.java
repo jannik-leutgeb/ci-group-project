@@ -4,7 +4,7 @@ import java.util.concurrent.*;
 public class GeneticNegotiation {
     // GA parameters
     private static final int POPULATION_SIZE = 50;
-    private static final int GENERATIONS = 1_000_000; // 10 million generations
+    private static final int GENERATIONS = 100_000; // 10 million generations
     private static final double CROSSOVER_RATE = 0.8;
     private static final double MUTATION_RATE = 0.2;
     private static final int TOURNAMENT_SIZE = 3;
@@ -23,21 +23,32 @@ public class GeneticNegotiation {
 
         int numThreads = Runtime.getRuntime().availableProcessors();
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        List<Future<?>> futures = new ArrayList<>();
+        List<Callable<Void>> tasks = new ArrayList<>();
         ConcurrentHashMap<String, Result> results = new ConcurrentHashMap<>();
 
         for (int i = 0; i < inSu200.length; i++) {
             for (int j = 0; j < inCu200.length; j++) {
                 final int idxI = i;
                 final int idxJ = j;
-                futures.add(executor.submit(() -> runInstance(idxI, idxJ, inSu200[idxI], inCu200[idxJ], results)));
+                tasks.add(() -> {
+                    runInstance(idxI, idxJ, inSu200[idxI], inCu200[idxJ], results);
+                    return null;
+                });
             }
         }
-        // Wait for all tasks to finish
-        for (Future<?> f : futures) {
-            try { f.get(); } catch (Exception e) { e.printStackTrace(); }
+        long startTime = System.currentTimeMillis();
+        try {
+            executor.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         executor.shutdown();
+
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        long hours = duration / (1000 * 60 * 60);
+        long minutes = (duration / (1000 * 60)) % 60;
+        long seconds = (duration / 1000) % 60;
 
         // Print all results together
         System.out.println("\n==== Best Results for All Instances ====\n");
@@ -49,6 +60,7 @@ public class GeneticNegotiation {
             r.customer.print(r.contract);
             System.out.println("  Total Fitness: " + r.fitness);
         });
+        System.out.printf("\nTotal execution time: %02d:%02d:%02d\n", hours, minutes, seconds);
     }
 
     private static void runInstance(int i, int j, String supplierFile, String customerFile, ConcurrentHashMap<String, Result> results) {
@@ -80,7 +92,7 @@ public class GeneticNegotiation {
                         int[] child2 = Arrays.copyOf(parent2, contractSize);
                         // Crossover
                         if (Math.random() < CROSSOVER_RATE) {
-                            int[][] children = onePointCrossover(parent1, parent2);
+                            int[][] children = orderCrossover(parent1, parent2);
                             child1 = children[0];
                             child2 = children[1];
                         }
@@ -104,6 +116,9 @@ public class GeneticNegotiation {
                             localBestFitness = fitness;
                             localBestContract = Arrays.copyOf(contract, contract.length);
                         }
+                    }
+                    if (gen % 10000 == 0) {
+                        System.out.println("Generation " + gen + ": Best fitness = " + localBestFitness);
                     }
                 }
                 // Track global best
@@ -171,6 +186,50 @@ public class GeneticNegotiation {
             if (!exists) {
                 child[idx++] = gene;
                 if (idx == size) break;
+            }
+        }
+    }
+
+    // Order Crossover (OX) for permutations
+    private static int[][] orderCrossover(int[] p1, int[] p2) {
+        int size = p1.length;
+        Random rand = new Random();
+        int start = rand.nextInt(size);
+        int end = rand.nextInt(size);
+        if (start > end) {
+            int temp = start;
+            start = end;
+            end = temp;
+        }
+        int[] child1 = new int[size];
+        int[] child2 = new int[size];
+        Arrays.fill(child1, -1);
+        Arrays.fill(child2, -1);
+        // Copy the slice from parents
+        for (int i = start; i <= end; i++) {
+            child1[i] = p1[i];
+            child2[i] = p2[i];
+        }
+        // Fill the rest from the other parent
+        fillOX(child1, p2, end, size);
+        fillOX(child2, p1, end, size);
+        return new int[][]{child1, child2};
+    }
+
+    private static void fillOX(int[] child, int[] parent, int end, int size) {
+        int idx = (end + 1) % size;
+        for (int i = 0; i < size; i++) {
+            int gene = parent[(end + 1 + i) % size];
+            boolean exists = false;
+            for (int j = 0; j < size; j++) {
+                if (child[j] == gene) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) {
+                child[idx] = gene;
+                idx = (idx + 1) % size;
             }
         }
     }
