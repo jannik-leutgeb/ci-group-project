@@ -1,8 +1,7 @@
 import java.io.FileNotFoundException;
 
 public class Mediator implements MediatorInterface {
-
-    int contractSize;
+    private int contractSize;
 
     public Mediator(int contractSizeA, int contractSizeB) throws FileNotFoundException {
         if (contractSizeA != contractSizeB) {
@@ -13,15 +12,16 @@ public class Mediator implements MediatorInterface {
 
     public int[] initContract() {
         int[] contract = new int[contractSize];
-        for (int i = 0; i < contractSize; i++) contract[i] = i;
+        boolean[] used = new boolean[contractSize]; // Track which jobs are already assigned
 
         for (int i = 0; i < contractSize; i++) {
-            int index1 = (int) (Math.random() * contractSize);
-            int index2 = (int) (Math.random() * contractSize);
+            int jobIndex;
+            do {
+                jobIndex = (int) (Math.random() * contractSize);
+            } while (used[jobIndex]); // Keep generating until we find unused job
 
-            int temp = contract[index1];
-            contract[index1] = contract[index2];
-            contract[index2] = temp;
+            contract[i] = jobIndex;
+            used[jobIndex] = true;
         }
 
         return contract;
@@ -71,8 +71,115 @@ public class Mediator implements MediatorInterface {
         return proposal;
     }
 
+    private int[] constructProposal_REVERSE(int[] contract) {
+        int[] proposal = new int[contractSize];
+        System.arraycopy(contract, 0, proposal, 0, contractSize);
+
+        // Select two random indices to define the subarray
+        int index1 = (int) (Math.random() * contractSize);
+        int index2 = (int) (Math.random() * contractSize);
+
+        // Ensure index1 is less than index2
+        if (index1 > index2) {
+            int temp = index1;
+            index1 = index2;
+            index2 = temp;
+        }
+
+        // Reverse the subarray
+        while (index1 < index2) {
+            int temp = proposal[index1];
+            proposal[index1] = proposal[index2];
+            proposal[index2] = temp;
+            index1++;
+            index2--;
+        }
+
+        check(proposal); // Validate the proposal
+        return proposal;
+    }
+
+    private int[] constructProposal_SCRAMBLE(int[] contract) {
+        int[] proposal = new int[contractSize];
+        System.arraycopy(contract, 0, proposal, 0, contractSize);
+
+        int index1 = (int) (Math.random() * contractSize);
+        int index2 = (int) (Math.random() * contractSize);
+
+        if (index1 > index2) {
+            int temp = index1;
+            index1 = index2;
+            index2 = temp;
+        }
+
+        // Shuffle the subarray
+        java.util.List<Integer> subarray = new java.util.ArrayList<>();
+        for (int i = index1; i <= index2; i++) {
+            subarray.add(proposal[i]);
+        }
+        java.util.Collections.shuffle(subarray);
+
+        for (int i = index1; i <= index2; i++) {
+            proposal[i] = subarray.get(i - index1);
+        }
+
+        check(proposal);
+        return proposal;
+    }
+
+    private int[] constructProposal_TWO_POINT_SWAP(int[] contract) {
+        int[] proposal = new int[contractSize];
+        System.arraycopy(contract, 0, proposal, 0, contractSize);
+
+        int index1 = (int) (Math.random() * contractSize);
+        int index2 = (int) (Math.random() * contractSize);
+
+        // Swap the two elements
+        int temp = proposal[index1];
+        proposal[index1] = proposal[index2];
+        proposal[index2] = temp;
+
+        check(proposal);
+        return proposal;
+    }
+
+    private int[] constructProposal_CYCLE_SHIFT(int[] contract) {
+        int[] proposal = new int[contractSize];
+        System.arraycopy(contract, 0, proposal, 0, contractSize);
+
+        int shift = (int) (Math.random() * contractSize);
+        boolean leftShift = Math.random() < 0.5;
+
+        if (leftShift) {
+            for (int i = 0; i < contractSize; i++) {
+                proposal[i] = contract[(i + shift) % contractSize];
+            }
+        } else {
+            for (int i = 0; i < contractSize; i++) {
+                proposal[i] = contract[(i - shift + contractSize) % contractSize];
+            }
+        }
+
+        check(proposal);
+        return proposal;
+    }
+
     public int[] constructProposal(int[] contract) {
-        return (Math.random() < 0.5) ? constructProposal_SHIFT(contract) : constructProposal_SWAP(contract);
+        double random = Math.random();
+
+        if (random < 0.229) {
+            return constructProposal_SHIFT(contract); // 149573
+        } else if (random < 0.354) {
+            return constructProposal_SWAP(contract); // 273451
+        } else if (random < 0.529) {
+            return constructProposal_SCRAMBLE(contract); // 196006
+        } else if (random < 0.75) {
+            return constructProposal_TWO_POINT_SWAP(contract); // 155068
+        } else if (random < 0.858) {
+            return constructProposal_CYCLE_SHIFT(contract); // 318410
+        } else {
+            return constructProposal_REVERSE(contract); // 240229
+        }
     }
 
     public void check(int[] proposal) {

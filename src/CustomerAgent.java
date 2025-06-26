@@ -2,7 +2,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 
-public class CustomerAgent extends Agent {
+public class CustomerAgent implements AgentInterface {
 
     private int[][] timeMatrix;
     private int[][] delayMatrix;                                                            // calculated based on timeMatrix for efficiency reason
@@ -69,7 +69,7 @@ public class CustomerAgent extends Agent {
         }
     }
 
-    private int evaluate(int[] contract) {
+    public int evaluate(int[] contract) {
         int result = 0;
         for (int i = 1; i < contract.length; i++) {
             int jobVor = contract[i - 1];
