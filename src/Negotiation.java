@@ -39,7 +39,7 @@ public class Negotiation {
                     med = new Mediator(agA.getContractSize(), agB.getContractSize());       // contract size = number of jobs
                     contract = med.initContract();                                          // contract = solution = job list
 
-                    for (int round = 1; round <= maxRounds; round++) {                       // mediator
+                    for (int round = 1; round <= maxRounds; round++) {                      // mediator
                         proposal = med.constructProposal(contract);
                         voteA = agA.vote(contract, proposal);                               // autonomy + private infos
                         voteB = agB.vote(contract, proposal);
